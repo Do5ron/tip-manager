@@ -38,6 +38,7 @@ export default function App() {
   const [waitressTips, setWaitressTips] = useState("");
   const [bartenderTips, setBartenderTips] = useState("");
   const [shiftResult, setShiftResult] = useState(null);
+  const [shiftLoading, setShiftLoading] = useState(false);
   const [wDropOpen, setWDropOpen] = useState(false);
   const [bDropOpen, setBDropOpen] = useState(false);
 
@@ -70,7 +71,16 @@ export default function App() {
       if (Array.isArray(shiftData) && shiftData.length > 1) {
         const shiftMap = {};
         shiftData.slice(1).forEach(row => {
-          const [date, type, name, hours, tips, pension, tipPerHourBefore, tipPerHourAfter, totalPool, transferToBartenders] = row;
+          let [date, type, name, hours, tips, pension, tipPerHourBefore, tipPerHourAfter, totalPool, transferToBartenders] = row;
+          // Normalize date to YYYY-MM-DD string regardless of how Sheets returns it
+          if (date instanceof Date) {
+            date = date.toISOString().split("T")[0];
+          } else if (typeof date === "string" && date.includes("/")) {
+            const parts = date.split("/");
+            date = `${parts[2]}-${parts[0].padStart(2,"0")}-${parts[1].padStart(2,"0")}`;
+          } else {
+            date = String(date).split("T")[0];
+          }
           if (!shiftMap[date]) shiftMap[date] = { date, waitressResults: [], bartenderResults: [], pension: 0, waitressTips: 0, bartenderTips: 0, transferToBartenders: 0, waitressPool: 0, bartenderPool: 0 };
           if (type === "waitress") {
             shiftMap[date].waitressResults.push({ name, hrs: Number(hours), tips: Number(tips), pension: Number(pension), tipPerHourBefore: Number(tipPerHourBefore), tipPerHourAfter: Number(tipPerHourAfter) });
@@ -142,32 +152,38 @@ export default function App() {
 
   function handleDateChange(newDate) {
     setShiftDate(newDate);
-    const existing = shifts.find(s => s.date === newDate);
-    if (existing) {
-      // Load existing shift data into form
-      const wNames = existing.waitressResults.map(w => w.name);
-      const bNames = existing.bartenderResults.map(b => b.name);
-      setSelectedWaitresses(wNames);
-      setSelectedBartenders(bNames);
-      const wHrs = {};
-      existing.waitressResults.forEach(w => { wHrs[w.name] = w.hrs; });
-      setWaitressHours(wHrs);
-      const bHrs = {};
-      existing.bartenderResults.forEach(b => { bHrs[b.name] = b.hrs; });
-      setBartenderHours(bHrs);
-      setWaitressTips(existing.waitressTips.toString());
-      setBartenderTips(existing.bartenderTips.toString());
-      setShiftResult(existing);
-    } else {
-      // Clear everything
-      setSelectedWaitresses([]);
-      setSelectedBartenders([]);
-      setWaitressHours({});
-      setBartenderHours({});
-      setWaitressTips("");
-      setBartenderTips("");
-      setShiftResult(null);
-    }
+    setShiftLoading(true);
+    setShiftResult(null);
+    setSelectedWaitresses([]);
+    setSelectedBartenders([]);
+    setWaitressHours({});
+    setBartenderHours({});
+    setWaitressTips("");
+    setBartenderTips("");
+
+    // Small delay so state clears visually before loading
+    setTimeout(() => {
+      setShifts(prev => {
+        const existing = prev.find(s => s.date === newDate);
+        if (existing) {
+          const wNames = existing.waitressResults.map(w => w.name);
+          const bNames = existing.bartenderResults.map(b => b.name);
+          setSelectedWaitresses(wNames);
+          setSelectedBartenders(bNames);
+          const wHrs = {};
+          existing.waitressResults.forEach(w => { wHrs[w.name] = String(w.hrs); });
+          setWaitressHours(wHrs);
+          const bHrs = {};
+          existing.bartenderResults.forEach(b => { bHrs[b.name] = String(b.hrs); });
+          setBartenderHours(bHrs);
+          setWaitressTips(String(existing.waitressTips));
+          setBartenderTips(String(existing.bartenderTips));
+          setShiftResult(existing);
+        }
+        setShiftLoading(false);
+        return prev;
+      });
+    }, 300);
   }
 
   function toggleSelect(name, list, setList) {
@@ -337,9 +353,16 @@ export default function App() {
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <Card title="📅 Shift Setup">
             <label style={labelStyle}>Date</label>
-            <input type="date" value={shiftDate} onChange={e => handleDateChange(e.target.value)} style={{ ...inputStyle, marginBottom: 16 }} />
+            <input type="date" value={shiftDate} onChange={e => handleDateChange(e.target.value)} style={{ ...inputStyle, marginBottom: 12 }} />
 
-            {/* Waitresses dropdown */}
+            {shiftLoading && (
+              <div style={{ textAlign: "center", padding: "16px 0", color: "#6c63ff", fontSize: 13, fontWeight: 600 }}>
+                ⏳ Loading shift data...
+              </div>
+            )}
+
+            {!shiftLoading && (
+            <div>
             <ShiftDropdown
               label="👩 Waitresses"
               color="#6c63ff"
@@ -381,6 +404,8 @@ export default function App() {
             <Btn onClick={calculateShift} full primary disabled={saving}>
               {saving ? "Saving..." : "Calculate & Save Shift"}
             </Btn>
+            </div>
+            )}
           </Card>
 
           {shiftResult && (
