@@ -140,6 +140,36 @@ export default function App() {
   const activeWaitresses = staff.waitresses.filter(s => s.active).map(s => s.name);
   const activeBartenders = staff.bartenders.filter(s => s.active).map(s => s.name);
 
+  function handleDateChange(newDate) {
+    setShiftDate(newDate);
+    const existing = shifts.find(s => s.date === newDate);
+    if (existing) {
+      // Load existing shift data into form
+      const wNames = existing.waitressResults.map(w => w.name);
+      const bNames = existing.bartenderResults.map(b => b.name);
+      setSelectedWaitresses(wNames);
+      setSelectedBartenders(bNames);
+      const wHrs = {};
+      existing.waitressResults.forEach(w => { wHrs[w.name] = w.hrs; });
+      setWaitressHours(wHrs);
+      const bHrs = {};
+      existing.bartenderResults.forEach(b => { bHrs[b.name] = b.hrs; });
+      setBartenderHours(bHrs);
+      setWaitressTips(existing.waitressTips.toString());
+      setBartenderTips(existing.bartenderTips.toString());
+      setShiftResult(existing);
+    } else {
+      // Clear everything
+      setSelectedWaitresses([]);
+      setSelectedBartenders([]);
+      setWaitressHours({});
+      setBartenderHours({});
+      setWaitressTips("");
+      setBartenderTips("");
+      setShiftResult(null);
+    }
+  }
+
   function toggleSelect(name, list, setList) {
     setList(l => l.includes(name) ? l.filter(n => n !== name) : [...l, name]);
   }
@@ -307,7 +337,7 @@ export default function App() {
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <Card title="📅 Shift Setup">
             <label style={labelStyle}>Date</label>
-            <input type="date" value={shiftDate} onChange={e => setShiftDate(e.target.value)} style={{ ...inputStyle, marginBottom: 16 }} />
+            <input type="date" value={shiftDate} onChange={e => handleDateChange(e.target.value)} style={{ ...inputStyle, marginBottom: 16 }} />
 
             {/* Waitresses dropdown */}
             <ShiftDropdown
