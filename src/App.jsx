@@ -9,13 +9,17 @@ function getTodayStr() {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 }
 function parseDateStr(date) {
-  // Always return YYYY-MM-DD string, never let JS shift timezone
   if (!date) return "";
+  // If it's a Date object, read local date parts (avoids UTC shift)
   if (date instanceof Date) {
     return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
   }
-  const s = String(date);
-  if (s.includes("T")) return s.split("T")[0];
+  const s = String(date).trim();
+  // Already clean YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  // ISO string with time — slice only the date part (no Date() parsing)
+  if (s.includes("T")) return s.slice(0, 10);
+  // MM/DD/YYYY
   if (s.includes("/")) {
     const [m, d, y] = s.split("/");
     return `${y}-${m.padStart(2,"0")}-${d.padStart(2,"0")}`;
@@ -298,7 +302,7 @@ export default function App() {
   return (
     <div style={{ fontFamily: "system-ui, sans-serif", maxWidth: 600, margin: "0 auto", padding: 16, background: "#f8f9fa", minHeight: "100vh" }}>
       <h1 style={{ textAlign: "center", color: "#1a1a2e", fontSize: 22, marginBottom: 2 }}>🍽️ Tip Manager</h1>
-      <div style={{ textAlign: "center", fontSize: 11, color: "#bbb", marginBottom: 12, letterSpacing: 1 }}>v1.5</div>
+      <div style={{ textAlign: "center", fontSize: 11, color: "#bbb", marginBottom: 12, letterSpacing: 1 }}>v1.7</div>
 
       {syncMsg && (
         <div style={{ textAlign: "center", fontSize: 12, color: syncMsg.includes("⚠️") ? "#e74c3c" : "#27ae60", marginBottom: 8, padding: "6px 12px", background: "#fff", borderRadius: 8 }}>
