@@ -209,18 +209,19 @@ export default function App() {
   async function calculateShift() {
     const wTips = parseFloat(waitressTips) || 0;
     const bTips = parseFloat(bartenderTips) || 0;
-    const pension = wTips * 0.15;
-    const afterPension = wTips * 0.85;
-    const transferToBartenders = afterPension * 0.05;
-    const waitressPool = afterPension - transferToBartenders;
+    const transferToBartenders = wTips * 0.05;
+    const afterTransfer = wTips - transferToBartenders;
+    const pension = afterTransfer * 0.15;
+    const waitressPool = afterTransfer * 0.85;
     const bartenderPool = bTips + transferToBartenders;
+    const afterPension = afterTransfer; // for per-hour-before calc
     const totalWHours = selectedWaitresses.reduce((s, n) => s + (parseFloat(waitressHours[n]) || 0), 0);
     const totalBHours = selectedBartenders.reduce((s, n) => s + (parseFloat(bartenderHours[n]) || 0), 0);
 
     const waitressResults = selectedWaitresses.map(name => {
       const hrs = parseFloat(waitressHours[name]) || 0;
       const share = totalWHours > 0 ? (hrs / totalWHours) * waitressPool : 0;
-      const shareBeforePension = totalWHours > 0 ? (hrs / totalWHours) * afterPension : 0;
+      const shareBeforePension = totalWHours > 0 ? (hrs / totalWHours) * afterTransfer : 0;
       const myPension = totalWHours > 0 ? (hrs / totalWHours) * pension : 0;
       return { name, hrs, tips: share, pension: myPension, tipPerHourAfter: hrs > 0 ? share / hrs : 0, tipPerHourBefore: hrs > 0 ? shareBeforePension / hrs : 0 };
     });
@@ -305,7 +306,7 @@ export default function App() {
   return (
     <div style={{ fontFamily: "system-ui, sans-serif", maxWidth: 600, margin: "0 auto", padding: 16, background: "#f8f9fa", minHeight: "100vh" }}>
       <h1 style={{ textAlign: "center", color: "#1a1a2e", fontSize: 22, marginBottom: 2 }}>🍽️ Tip Manager</h1>
-      <div style={{ textAlign: "center", fontSize: 11, color: "#bbb", marginBottom: 12, letterSpacing: 1 }}>v1.8</div>
+      <div style={{ textAlign: "center", fontSize: 11, color: "#bbb", marginBottom: 12, letterSpacing: 1 }}>v1.9</div>
 
       {syncMsg && (
         <div style={{ textAlign: "center", fontSize: 12, color: syncMsg.includes("⚠️") ? "#e74c3c" : "#27ae60", marginBottom: 8, padding: "6px 12px", background: "#fff", borderRadius: 8 }}>
