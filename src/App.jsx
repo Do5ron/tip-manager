@@ -4,7 +4,24 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzVT_SIdh1gAC3-dZq7Wkyn
 const TABS = ["Staff", "Shift", "Monthly", "Payment"];
 
 function formatILS(n) { return "₪" + Number(n).toFixed(2); }
-function getTodayStr() { return new Date().toISOString().split("T")[0]; }
+function getTodayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function parseDateStr(date) {
+  // Always return YYYY-MM-DD string, never let JS shift timezone
+  if (!date) return "";
+  if (date instanceof Date) {
+    return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
+  }
+  const s = String(date);
+  if (s.includes("T")) return s.split("T")[0];
+  if (s.includes("/")) {
+    const [m, d, y] = s.split("/");
+    return `${y}-${m.padStart(2,"0")}-${d.padStart(2,"0")}`;
+  }
+  return s.slice(0, 10);
+}
 function getMonthKey(d) { return d.slice(0, 7); }
 
 async function gasGet(action) {
@@ -71,16 +88,8 @@ export default function App() {
       if (Array.isArray(shiftData) && shiftData.length > 1) {
         const shiftMap = {};
         shiftData.slice(1).forEach(row => {
-          let [date, type, name, hours, tips, pension, tipPerHourBefore, tipPerHourAfter, totalPool, transferToBartenders] = row;
-          // Normalize date to YYYY-MM-DD string regardless of how Sheets returns it
-          if (date instanceof Date) {
-            date = date.toISOString().split("T")[0];
-          } else if (typeof date === "string" && date.includes("/")) {
-            const parts = date.split("/");
-            date = `${parts[2]}-${parts[0].padStart(2,"0")}-${parts[1].padStart(2,"0")}`;
-          } else {
-            date = String(date).split("T")[0];
-          }
+          let [rawDate, type, name, hours, tips, pension, tipPerHourBefore, tipPerHourAfter, totalPool, transferToBartenders] = row;
+          const date = parseDateStr(rawDate);
           if (!shiftMap[date]) shiftMap[date] = { date, waitressResults: [], bartenderResults: [], pension: 0, waitressTips: 0, bartenderTips: 0, transferToBartenders: 0, waitressPool: 0, bartenderPool: 0 };
           if (type === "waitress") {
             shiftMap[date].waitressResults.push({ name, hrs: Number(hours), tips: Number(tips), pension: Number(pension), tipPerHourBefore: Number(tipPerHourBefore), tipPerHourAfter: Number(tipPerHourAfter) });
