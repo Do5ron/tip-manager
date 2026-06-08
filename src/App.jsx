@@ -63,6 +63,7 @@ export default function App() {
   const [bartenderTips, setBartenderTips] = useState("");
   const [shiftResult, setShiftResult] = useState(null);
   const [shiftLoading, setShiftLoading] = useState(false);
+  const [bartenderShare, setBartenderShare] = useState(5);
   const [wDropOpen, setWDropOpen] = useState(false);
   const [bDropOpen, setBDropOpen] = useState(false);
 
@@ -95,9 +96,9 @@ export default function App() {
       if (Array.isArray(shiftData) && shiftData.length > 1) {
         const shiftMap = {};
         shiftData.slice(1).forEach(row => {
-          let [rawDate, type, name, hours, tips, pension, tipPerHourBefore, tipPerHourAfter, totalPool, transferToBartenders] = row;
+          let [rawDate, type, name, hours, tips, pension, tipPerHourBefore, tipPerHourAfter, totalPool, transferToBartenders, bartenderSharePct] = row;
           const date = parseDateStr(rawDate);
-          if (!shiftMap[date]) shiftMap[date] = { date, waitressResults: [], bartenderResults: [], pension: 0, waitressTips: 0, bartenderTips: 0, transferToBartenders: 0, waitressPool: 0, bartenderPool: 0 };
+          if (!shiftMap[date]) shiftMap[date] = { date, waitressResults: [], bartenderResults: [], pension: 0, waitressTips: 0, bartenderTips: 0, transferToBartenders: 0, waitressPool: 0, bartenderPool: 0, bartenderSharePct: Number(bartenderSharePct) || 5 };
           if (type === "waitress") {
             shiftMap[date].waitressResults.push({ name, hrs: Number(hours), tips: Number(tips), pension: Number(pension), tipPerHourBefore: Number(tipPerHourBefore), tipPerHourAfter: Number(tipPerHourAfter) });
             shiftMap[date].transferToBartenders = Number(transferToBartenders);
@@ -176,6 +177,7 @@ export default function App() {
     setBartenderHours({});
     setWaitressTips("");
     setBartenderTips("");
+    setBartenderShare(5);
 
     // Small delay so state clears visually before loading
     setTimeout(() => {
@@ -194,6 +196,7 @@ export default function App() {
           setBartenderHours(bHrs);
           setWaitressTips(String(existing.waitressTips));
           setBartenderTips(String(existing.bartenderTips));
+          setBartenderShare(existing.bartenderSharePct || 5);
           setShiftResult(existing);
         }
         setShiftLoading(false);
@@ -209,12 +212,13 @@ export default function App() {
   async function calculateShift() {
     const wTips = parseFloat(waitressTips) || 0;
     const bTips = parseFloat(bartenderTips) || 0;
-    const transferToBartenders = wTips * 0.05;
+    const sharePct = bartenderShare / 100;
+    const transferToBartenders = wTips * sharePct;
     const afterTransfer = wTips - transferToBartenders;
     const pension = afterTransfer * 0.15;
     const waitressPool = afterTransfer * 0.85;
     const bartenderPool = bTips + transferToBartenders;
-    const afterPension = afterTransfer; // for per-hour-before calc
+    const afterPension = afterTransfer;
     const totalWHours = selectedWaitresses.reduce((s, n) => s + (parseFloat(waitressHours[n]) || 0), 0);
     const totalBHours = selectedBartenders.reduce((s, n) => s + (parseFloat(bartenderHours[n]) || 0), 0);
 
@@ -232,7 +236,7 @@ export default function App() {
       return { name, hrs, tips: share, tipPerHour: hrs > 0 ? share / hrs : 0 };
     });
 
-    const result = { date: shiftDate, waitressResults, bartenderResults, pension, waitressTips: wTips, bartenderTips: bTips, transferToBartenders, waitressPool, bartenderPool };
+    const result = { date: shiftDate, waitressResults, bartenderResults, pension, waitressTips: wTips, bartenderTips: bTips, transferToBartenders, waitressPool, bartenderPool, bartenderSharePct: bartenderShare };
     setShiftResult(result);
     setShifts(prev => [...prev.filter(s => s.date !== shiftDate), result]);
 
@@ -241,8 +245,8 @@ export default function App() {
     try {
       await gasPost({ action: "deleteShift", date: shiftDate });
       const rows = [
-        ...waitressResults.map(w => [shiftDate, "waitress", w.name, w.hrs, w.tips, w.pension, w.tipPerHourBefore, w.tipPerHourAfter, wTips, transferToBartenders]),
-        ...bartenderResults.map(b => [shiftDate, "bartender", b.name, b.hrs, b.tips, 0, 0, b.tipPerHour, bTips, 0]),
+        ...waitressResults.map(w => [shiftDate, "waitress", w.name, w.hrs, w.tips, w.pension, w.tipPerHourBefore, w.tipPerHourAfter, wTips, transferToBartenders, bartenderShare]),
+        ...bartenderResults.map(b => [shiftDate, "bartender", b.name, b.hrs, b.tips, 0, 0, b.tipPerHour, bTips, 0, bartenderShare]),
       ];
       await gasPost({ action: "saveShift", rows });
       showSync("✅ Shift saved");
@@ -306,7 +310,7 @@ export default function App() {
   return (
     <div style={{ fontFamily: "system-ui, sans-serif", maxWidth: 600, margin: "0 auto", padding: 16, background: "#f8f9fa", minHeight: "100vh" }}>
       <h1 style={{ textAlign: "center", color: "#1a1a2e", fontSize: 22, marginBottom: 2 }}>🍽️ Tip Manager</h1>
-      <div style={{ textAlign: "center", fontSize: 11, color: "#bbb", marginBottom: 12, letterSpacing: 1 }}>v1.9</div>
+      <div style={{ textAlign: "center", fontSize: 11, color: "#bbb", marginBottom: 12, letterSpacing: 1 }}>v2.0</div>
 
       {syncMsg && (
         <div style={{ textAlign: "center", fontSize: 12, color: syncMsg.includes("⚠️") ? "#e74c3c" : "#27ae60", marginBottom: 8, padding: "6px 12px", background: "#fff", borderRadius: 8 }}>
@@ -419,6 +423,21 @@ export default function App() {
               </div>
             </div>
 
+            <div style={{ marginBottom: 12 }}>
+              <label style={labelStyle}>Bartender share from waitress tips</label>
+              <div style={{ display: "flex", gap: 8 }}>
+                {[5, 10].map(pct => (
+                  <div key={pct} onClick={() => setBartenderShare(pct)} style={{
+                    flex: 1, textAlign: "center", padding: "10px 0", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 14,
+                    background: bartenderShare === pct ? "#ff6584" : "#f0f0f0",
+                    color: bartenderShare === pct ? "#fff" : "#888",
+                    border: `2px solid ${bartenderShare === pct ? "#ff6584" : "transparent"}`,
+                    transition: "all 0.15s",
+                  }}>{pct}%</div>
+                ))}
+              </div>
+            </div>
+
             <Btn onClick={calculateShift} full primary disabled={saving}>
               {saving ? "Saving..." : "Calculate & Save Shift"}
             </Btn>
@@ -431,7 +450,7 @@ export default function App() {
               <div style={{ background: "#f0eeff", borderRadius: 8, padding: 10, marginBottom: 12, fontSize: 13 }}>
                 <div>Total waitress tips: {formatILS(shiftResult.waitressTips)}</div>
                 <div>Pension (15%): <strong style={{ color: "#e74c3c" }}>{formatILS(shiftResult.pension)}</strong></div>
-                <div>Transfer to bartenders (5%): {formatILS(shiftResult.transferToBartenders)}</div>
+                <div>Transfer to bartenders ({shiftResult.bartenderSharePct || 5}%): {formatILS(shiftResult.transferToBartenders)}</div>
                 <div>Waitress pool: {formatILS(shiftResult.waitressPool)} &nbsp;|&nbsp; Bartender pool: {formatILS(shiftResult.bartenderPool)}</div>
               </div>
 
