@@ -210,6 +210,12 @@ export default function App() {
   }
 
   async function calculateShift() {
+    // Check if shift already exists
+    const existing = shifts.find(s => s.date === shiftDate);
+    if (existing) {
+      const confirm = window.confirm(`A shift for ${shiftDate} already exists.\n\nClick OK to replace it, or Cancel to keep the existing data.`);
+      if (!confirm) return;
+    }
     const wTips = parseFloat(waitressTips) || 0;
     const bTips = parseFloat(bartenderTips) || 0;
     const sharePct = bartenderShare / 100;
@@ -310,7 +316,7 @@ export default function App() {
   return (
     <div style={{ fontFamily: "system-ui, sans-serif", maxWidth: 600, margin: "0 auto", padding: 16, background: "#f8f9fa", minHeight: "100vh" }}>
       <h1 style={{ textAlign: "center", color: "#1a1a2e", fontSize: 22, marginBottom: 2 }}>🍽️ Tip Manager</h1>
-      <div style={{ textAlign: "center", fontSize: 11, color: "#bbb", marginBottom: 12, letterSpacing: 1 }}>v2.0</div>
+      <div style={{ textAlign: "center", fontSize: 11, color: "#bbb", marginBottom: 12, letterSpacing: 1 }}>v2.1</div>
 
       {syncMsg && (
         <div style={{ textAlign: "center", fontSize: 12, color: syncMsg.includes("⚠️") ? "#e74c3c" : "#27ae60", marginBottom: 8, padding: "6px 12px", background: "#fff", borderRadius: 8 }}>
