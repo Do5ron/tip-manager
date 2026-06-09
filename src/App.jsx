@@ -96,7 +96,8 @@ export default function App() {
       if (Array.isArray(shiftData) && shiftData.length > 1) {
         const shiftMap = {};
         shiftData.slice(1).forEach(row => {
-          let [rawDate, type, name, hours, tips, pension, tipPerHourBefore, tipPerHourAfter, totalPool, transferToBartenders, bartenderSharePct] = row;
+          let [rawDate, type, name, hours, tips, pension, tipPerHourBefore, tipPerHourAfter, totalPool, transferToBartenders, bartenderSharePct, savedAt, status] = row;
+          if (status === "archived") return;
           const date = parseDateStr(rawDate);
           if (!shiftMap[date]) shiftMap[date] = { date, waitressResults: [], bartenderResults: [], pension: 0, waitressTips: 0, bartenderTips: 0, transferToBartenders: 0, waitressPool: 0, bartenderPool: 0, bartenderSharePct: Number(bartenderSharePct) || 5 };
           if (type === "waitress") {
@@ -249,7 +250,7 @@ export default function App() {
     setSaving(true);
     showSync("Saving...");
     try {
-      await gasPost({ action: "deleteShift", date: shiftDate });
+      await gasPost({ action: "archiveShift", date: shiftDate });
       const rows = [
         ...waitressResults.map(w => [shiftDate, "waitress", w.name, w.hrs, w.tips, w.pension, w.tipPerHourBefore, w.tipPerHourAfter, wTips, transferToBartenders, bartenderShare]),
         ...bartenderResults.map(b => [shiftDate, "bartender", b.name, b.hrs, b.tips, 0, 0, b.tipPerHour, bTips, 0, bartenderShare]),
@@ -316,7 +317,7 @@ export default function App() {
   return (
     <div style={{ fontFamily: "system-ui, sans-serif", maxWidth: 600, margin: "0 auto", padding: 16, background: "#f8f9fa", minHeight: "100vh" }}>
       <h1 style={{ textAlign: "center", color: "#1a1a2e", fontSize: 22, marginBottom: 2 }}>🍽️ Tip Manager</h1>
-      <div style={{ textAlign: "center", fontSize: 11, color: "#bbb", marginBottom: 12, letterSpacing: 1 }}>v2.1</div>
+      <div style={{ textAlign: "center", fontSize: 11, color: "#bbb", marginBottom: 12, letterSpacing: 1 }}>v2.2</div>
 
       {syncMsg && (
         <div style={{ textAlign: "center", fontSize: 12, color: syncMsg.includes("⚠️") ? "#e74c3c" : "#27ae60", marginBottom: 8, padding: "6px 12px", background: "#fff", borderRadius: 8 }}>
