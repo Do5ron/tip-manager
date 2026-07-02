@@ -317,7 +317,7 @@ export default function App() {
   return (
     <div style={{ fontFamily: "system-ui, sans-serif", maxWidth: 600, margin: "0 auto", padding: 16, background: "#f8f9fa", minHeight: "100vh" }}>
       <h1 style={{ textAlign: "center", color: "#1a1a2e", fontSize: 22, marginBottom: 2 }}>🍽️ Tip Manager</h1>
-      <div style={{ textAlign: "center", fontSize: 11, color: "#bbb", marginBottom: 12, letterSpacing: 1 }}>v2.2</div>
+      <div style={{ textAlign: "center", fontSize: 11, color: "#bbb", marginBottom: 12, letterSpacing: 1 }}>v2.3</div>
 
       {syncMsg && (
         <div style={{ textAlign: "center", fontSize: 12, color: syncMsg.includes("⚠️") ? "#e74c3c" : "#27ae60", marginBottom: 8, padding: "6px 12px", background: "#fff", borderRadius: 8 }}>
@@ -465,7 +465,7 @@ export default function App() {
               {shiftResult.waitressResults.map(w => (
                 <div key={w.name} style={{ background: "#fff", borderRadius: 8, padding: 10, marginBottom: 8, fontSize: 13 }}>
                   <div style={{ fontWeight: 600 }}>{w.name} — {w.hrs} hrs</div>
-                  <div>Tips: <strong>{formatILS(w.tips)}</strong></div>
+                  <div>Tips: <strong>{formatILS(w.tips)}</strong> &nbsp;|&nbsp; w/pension: <strong>{formatILS(w.tips + w.pension)}</strong> &nbsp;|&nbsp; Pension: <strong style={{ color: "#e74c3c" }}>{formatILS(w.pension)}</strong></div>
                   <div style={{ color: "#888" }}>Per hour before pension: {formatILS(w.tipPerHourBefore)} &nbsp;|&nbsp; After: {formatILS(w.tipPerHourAfter)}</div>
                 </div>
               ))}
