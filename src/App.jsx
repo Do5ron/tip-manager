@@ -317,7 +317,7 @@ export default function App() {
   return (
     <div style={{ fontFamily: "system-ui, sans-serif", maxWidth: 600, margin: "0 auto", padding: 16, background: "#f8f9fa", minHeight: "100vh" }}>
       <h1 style={{ textAlign: "center", color: "#1a1a2e", fontSize: 22, marginBottom: 2 }}>🍽️ Tip Manager</h1>
-      <div style={{ textAlign: "center", fontSize: 11, color: "#bbb", marginBottom: 12, letterSpacing: 1 }}>v2.3</div>
+      <div style={{ textAlign: "center", fontSize: 11, color: "#bbb", marginBottom: 12, letterSpacing: 1 }}>v2.4</div>
 
       {syncMsg && (
         <div style={{ textAlign: "center", fontSize: 12, color: syncMsg.includes("⚠️") ? "#e74c3c" : "#27ae60", marginBottom: 8, padding: "6px 12px", background: "#fff", borderRadius: 8 }}>
@@ -509,6 +509,7 @@ export default function App() {
                   <span style={{ color: "#888" }}>Avg/hr after pension:</span><span>{formatILS(d.days > 0 ? d.tipPerHourAfterSum / d.days : 0)}</span>
                   <span style={{ color: "#888" }}>Total pension:</span><span style={{ color: "#e74c3c" }}>{formatILS(d.pension)}</span>
                   <span style={{ color: "#888" }}>Total tips after pension:</span><span style={{ fontWeight: 700 }}>{formatILS(d.tips)}</span>
+                  <span style={{ color: "#888" }}>Total tips with pension:</span><span style={{ fontWeight: 700 }}>{formatILS(d.tips + d.pension)}</span>
                 </div>
               </div>
             ))}
