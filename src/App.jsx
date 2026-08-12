@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzVT_SIdh1gAC3-dZq7WkynvtCoN5z6SrhR2jZ4_b7ZbY4UHnDIDR9so0DIpHboo80/exec";
 const TABS = ["Staff", "Shift", "Monthly", "Payment"];
@@ -126,12 +126,20 @@ export default function App() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  const staffSaving = useRef(false);
+
   async function saveStaffToSheets(newStaffObj) {
-    const rows = [
-      ...newStaffObj.waitresses.map(s => ["waitress", s.name, s.active ? "active" : "inactive"]),
-      ...newStaffObj.bartenders.map(s => ["bartender", s.name, s.active ? "active" : "inactive"]),
-    ];
-    await gasPost({ action: "saveStaff", rows });
+    if (staffSaving.current) return;
+    staffSaving.current = true;
+    try {
+      const rows = [
+        ...newStaffObj.waitresses.map(s => ["waitress", s.name, s.active ? "active" : "inactive"]),
+        ...newStaffObj.bartenders.map(s => ["bartender", s.name, s.active ? "active" : "inactive"]),
+      ];
+      await gasPost({ action: "saveStaff", rows });
+    } finally {
+      staffSaving.current = false;
+    }
   }
 
   async function addStaff(role) {
@@ -317,7 +325,7 @@ export default function App() {
   return (
     <div style={{ fontFamily: "system-ui, sans-serif", maxWidth: 600, margin: "0 auto", padding: 16, background: "#f8f9fa", minHeight: "100vh" }}>
       <h1 style={{ textAlign: "center", color: "#1a1a2e", fontSize: 22, marginBottom: 2 }}>🍽️ Tip Manager</h1>
-      <div style={{ textAlign: "center", fontSize: 11, color: "#bbb", marginBottom: 12, letterSpacing: 1 }}>v2.4</div>
+      <div style={{ textAlign: "center", fontSize: 11, color: "#bbb", marginBottom: 12, letterSpacing: 1 }}>v2.5</div>
 
       {syncMsg && (
         <div style={{ textAlign: "center", fontSize: 12, color: syncMsg.includes("⚠️") ? "#e74c3c" : "#27ae60", marginBottom: 8, padding: "6px 12px", background: "#fff", borderRadius: 8 }}>
