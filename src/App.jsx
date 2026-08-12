@@ -142,6 +142,18 @@ export default function App() {
     }
   }
 
+  async function addStaffToSheets(role, name) {
+    await gasPost({ action: "addStaffMember", role, name, status: "active" });
+  }
+
+  async function removeStaffFromSheets(role, name) {
+    await gasPost({ action: "removeStaffMember", role, name });
+  }
+
+  async function updateStaffStatusInSheets(role, name, active) {
+    await gasPost({ action: "updateStaffStatus", role, name, status: active ? "active" : "inactive" });
+  }
+
   async function addStaff(role) {
     const name = role === "waitress" ? newWaitress.trim() : newBartender.trim();
     if (!name) return;
@@ -150,7 +162,7 @@ export default function App() {
     setStaff(newStaff);
     role === "waitress" ? setNewWaitress("") : setNewBartender("");
     setSaving(true);
-    await saveStaffToSheets(newStaff);
+    await addStaffToSheets(role, name);
     setSaving(false);
     showSync("✅ Staff saved");
   }
@@ -159,18 +171,20 @@ export default function App() {
     const key = role === "waitress" ? "waitresses" : "bartenders";
     const newStaff = { ...staff, [key]: staff[key].filter(s => s.name !== name) };
     setStaff(newStaff);
-    await saveStaffToSheets(newStaff);
+    await removeStaffFromSheets(role, name);
     showSync("✅ Removed");
   }
 
   async function toggleActive(role, name) {
     const key = role === "waitress" ? "waitresses" : "bartenders";
+    const person = staff[key].find(s => s.name === name);
+    const newActive = !person.active;
     const newStaff = {
       ...staff,
-      [key]: staff[key].map(s => s.name === name ? { ...s, active: !s.active } : s)
+      [key]: staff[key].map(s => s.name === name ? { ...s, active: newActive } : s)
     };
     setStaff(newStaff);
-    await saveStaffToSheets(newStaff);
+    await updateStaffStatusInSheets(role, name, newActive);
   }
 
   const activeWaitresses = staff.waitresses.filter(s => s.active).map(s => s.name);
@@ -325,7 +339,7 @@ export default function App() {
   return (
     <div style={{ fontFamily: "system-ui, sans-serif", maxWidth: 600, margin: "0 auto", padding: 16, background: "#f8f9fa", minHeight: "100vh" }}>
       <h1 style={{ textAlign: "center", color: "#1a1a2e", fontSize: 22, marginBottom: 2 }}>🍽️ Tip Manager</h1>
-      <div style={{ textAlign: "center", fontSize: 11, color: "#bbb", marginBottom: 12, letterSpacing: 1 }}>v2.5</div>
+      <div style={{ textAlign: "center", fontSize: 11, color: "#bbb", marginBottom: 12, letterSpacing: 1 }}>v2.6</div>
 
       {syncMsg && (
         <div style={{ textAlign: "center", fontSize: 12, color: syncMsg.includes("⚠️") ? "#e74c3c" : "#27ae60", marginBottom: 8, padding: "6px 12px", background: "#fff", borderRadius: 8 }}>
